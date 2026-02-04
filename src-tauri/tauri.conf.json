@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "eye-rest",
+  "productName": "EyeRest",
   "version": "0.1.0",
   "identifier": "com.ztings.eye-rest",
   "build": {
@@ -13,9 +13,28 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "eye-rest",
+        "label": "main",
+        "title": "EyeRest - 护眼助手",
+        "width": 400,
+        "height": 700,
+        "resizable": true,
+        "center": true,
+        "visible": true,
+        "decorations": true,
+        "alwaysOnTop": false
+      },
+      {
+        "label": "reminder",
+        "url": "reminder.html",
+        "title": "休息时间",
+        "fullscreen": false,
+        "visible": false,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
         "width": 800,
-        "height": 600
+        "height": 600,
+        "center": true
       }
     ],
     "security": {
@@ -31,6 +50,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "wix": {
+        "language": "zh-CN"
+      },
+      "nsis": {
+        "languages": ["SimpChinese"],
+        "installerIcon": "icons/icon.ico"
+      }
+    }
   }
 }

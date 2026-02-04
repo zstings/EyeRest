@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/reminder.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>休息时间 - EyeRest</title>
+    <script type="module" src="/src/reminder.ts" defer></script>
+  </head>
+
+  <body>
+    <div class="reminder-container">
+      <div class="reminder-content">
+        <h1 class="reminder-title">该休息了！</h1>
+        <p class="reminder-text">请看向 20 英尺（约 6 米）外的物体</p>
+
+        <div class="countdown">
+          <div class="countdown-number" id="rest-countdown">20</div>
+          <div class="countdown-label">秒</div>
+        </div>
+
+        <div class="eye-animation">
+          <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="60" cy="30" rx="50" ry="25" stroke="white" stroke-width="3" fill="none" class="eye-outline"/>
+            <circle cx="60" cy="30" r="12" fill="white" class="pupil"/>
+          </svg>
+        </div>
+
+        <button id="skip-btn" class="skip-button">跳过休息</button>
+      </div>
+    </div>
+  </body>
+</html>
