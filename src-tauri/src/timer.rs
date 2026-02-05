@@ -68,16 +68,10 @@ pub fn start_timer_loop(app_handle: AppHandle, state: AppStateWrapper) {
                                 eprintln!("Failed to hide reminder window: {}", e);
                             }
 
-                            // 检查是否自动开始
-                            if state_guard.settings.auto_start {
-                                state_guard.timer_state = TimerState::Running;
-                                state_guard.remaining_seconds = state_guard.work_duration;
-                                let _ = app_handle.emit("timer-state-changed", "Running");
-                            } else {
-                                state_guard.timer_state = TimerState::Stopped;
-                                state_guard.remaining_seconds = state_guard.work_duration;
-                                let _ = app_handle.emit("timer-state-changed", "Stopped");
-                            }
+                            // 休息结束后停止计时器
+                            state_guard.timer_state = TimerState::Stopped;
+                            state_guard.remaining_seconds = state_guard.work_duration;
+                            let _ = app_handle.emit("timer-state-changed", "Stopped");
                         }
                     }
                 }

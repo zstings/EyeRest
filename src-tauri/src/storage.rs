@@ -1,9 +1,8 @@
-use crate::state::Settings;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_store::{Store, StoreExt};
 use std::sync::Arc;
 
-const STORE_FILENAME: &str = "settings.json";
+const STORE_FILENAME: &str = "stats.json";
 
 /// 获取 Store 实例
 fn get_store<R: tauri::Runtime>(app: &AppHandle<R>) -> Result<Arc<Store<R>>, String> {
@@ -17,53 +16,6 @@ fn get_store<R: tauri::Runtime>(app: &AppHandle<R>) -> Result<Arc<Store<R>>, Str
         .map_err(|e| format!("Failed to create store: {}", e))?;
 
     Ok(store)
-}
-
-/// 保存设置
-pub fn save_settings<R: tauri::Runtime>(app: &AppHandle<R>, settings: &Settings) -> Result<(), String> {
-    let store = get_store(app)?;
-
-    store.set("work_minutes", serde_json::json!(settings.work_minutes));
-    store.set("rest_seconds", serde_json::json!(settings.rest_seconds));
-    store.set("auto_start", serde_json::json!(settings.auto_start));
-    store.set("theme", serde_json::json!(settings.theme));
-
-    store.save().map_err(|e| format!("Failed to save settings: {}", e))?;
-
-    Ok(())
-}
-
-/// 加载设置
-pub fn load_settings<R: tauri::Runtime>(app: &AppHandle<R>) -> Settings {
-    let store = match get_store(app) {
-        Ok(s) => s,
-        Err(_) => return Settings::default(),
-    };
-
-    let work_minutes = store.get("work_minutes")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32)
-        .unwrap_or(20);
-
-    let rest_seconds = store.get("rest_seconds")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32)
-        .unwrap_or(20);
-
-    let auto_start = store.get("auto_start")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-
-    let theme = store.get("theme")
-        .and_then(|v| v.as_str().map(|s| s.to_string()))
-        .unwrap_or_else(|| "light".to_string());
-
-    Settings {
-        work_minutes,
-        rest_seconds,
-        auto_start,
-        theme,
-    }
 }
 
 /// 保存统计数据

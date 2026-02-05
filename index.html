@@ -10,17 +10,19 @@
 
   <body>
     <div class="app-container">
-      <!-- 顶部标题和主题切换 -->
+      <!-- 顶部标题和控制按钮 -->
       <header class="header">
         <h1 class="app-title">EyeRest 护眼助手</h1>
-        <button id="theme-toggle" class="theme-toggle" title="切换主题">
-          <span class="theme-icon">🌙</span>
-        </button>
+        <div class="header-buttons">
+          <button id="theme-toggle" class="icon-btn" title="切换主题">
+            <span class="theme-icon">🌙</span>
+          </button>
+        </div>
       </header>
 
       <!-- 状态显示区 -->
       <section class="status-section">
-        <div class="timer-display" id="timer-display">20:00</div>
+        <div class="timer-display" id="timer-display">1:00</div>
         <div class="status-text" id="status-text">准备开始</div>
         <div class="progress-bar-container">
           <div class="progress-bar" id="progress-bar"></div>
@@ -39,42 +41,6 @@
           <span class="stat-label">今日已完成</span>
           <span class="stat-value" id="today-count">0</span>
           <span class="stat-unit">次</span>
-        </div>
-      </section>
-
-      <!-- 设置区 -->
-      <section class="settings-section">
-        <h2 class="section-title">设置</h2>
-        <div class="settings-form">
-          <div class="form-group">
-            <label for="work-minutes">工作时长（分钟）</label>
-            <input
-              type="number"
-              id="work-minutes"
-              min="1"
-              max="60"
-              value="20"
-            />
-          </div>
-          <div class="form-group">
-            <label for="rest-seconds">休息时长（秒）</label>
-            <input
-              type="number"
-              id="rest-seconds"
-              min="10"
-              max="60"
-              value="20"
-            />
-          </div>
-          <div class="form-group checkbox-group">
-            <label>
-              <input type="checkbox" id="auto-start" />
-              <span>休息后自动开始</span>
-            </label>
-          </div>
-          <button id="save-settings-btn" class="btn btn-primary btn-block">
-            保存设置
-          </button>
         </div>
       </section>
     </div>

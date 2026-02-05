@@ -1,5 +1,4 @@
-use crate::state::{AppStateWrapper, Settings, StateInfo, Stats, TimerState};
-use crate::storage::save_settings;
+use crate::state::{AppStateWrapper, StateInfo, Stats, TimerState};
 use crate::window::hide_reminder_window;
 use tauri::{AppHandle, Emitter, State};
 
@@ -83,40 +82,6 @@ pub fn get_state(state: State<AppStateWrapper>) -> StateInfo {
         work_duration: state_guard.work_duration,
         rest_duration: state_guard.rest_duration,
     }
-}
-
-/// 更新设置
-#[tauri::command]
-pub fn update_settings(
-    state: State<AppStateWrapper>,
-    app: AppHandle,
-    settings: Settings,
-) -> Result<(), String> {
-    let mut state_guard = state.lock();
-
-    // 更新工作时长和休息时长
-    state_guard.work_duration = (settings.work_minutes as u64) * 60;
-    state_guard.rest_duration = settings.rest_seconds as u64;
-
-    // 如果当前是停止状态，更新剩余时间
-    if state_guard.timer_state == TimerState::Stopped {
-        state_guard.remaining_seconds = state_guard.work_duration;
-    }
-
-    // 更新设置
-    state_guard.settings = settings.clone();
-
-    // 保存设置
-    save_settings(&app, &settings)?;
-
-    Ok(())
-}
-
-/// 获取设置
-#[tauri::command]
-pub fn get_settings(state: State<AppStateWrapper>) -> Settings {
-    let state_guard = state.lock();
-    state_guard.settings.clone()
 }
 
 /// 获取统计信息

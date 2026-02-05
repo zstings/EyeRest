@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { StateInfo, Settings, Stats, TimerState } from "./types";
+import type { StateInfo, Stats, TimerState } from "./types";
 
 // DOM 元素
 let timerDisplay: HTMLElement | null;
@@ -9,15 +9,10 @@ let progressBar: HTMLElement | null;
 let todayCount: HTMLElement | null;
 let startBtn: HTMLButtonElement | null;
 let pauseResumeBtn: HTMLButtonElement | null;
-let workMinutesInput: HTMLInputElement | null;
-let restSecondsInput: HTMLInputElement | null;
-let autoStartCheckbox: HTMLInputElement | null;
-let saveSettingsBtn: HTMLButtonElement | null;
 let themeToggleBtn: HTMLButtonElement | null;
 
 // 当前状态
 let currentState: StateInfo | null = null;
-let currentSettings: Settings | null = null;
 
 // 初始化
 async function init() {
@@ -28,15 +23,10 @@ async function init() {
   todayCount = document.getElementById("today-count");
   startBtn = document.getElementById("start-btn") as HTMLButtonElement;
   pauseResumeBtn = document.getElementById("pause-resume-btn") as HTMLButtonElement;
-  workMinutesInput = document.getElementById("work-minutes") as HTMLInputElement;
-  restSecondsInput = document.getElementById("rest-seconds") as HTMLInputElement;
-  autoStartCheckbox = document.getElementById("auto-start") as HTMLInputElement;
-  saveSettingsBtn = document.getElementById("save-settings-btn") as HTMLButtonElement;
   themeToggleBtn = document.getElementById("theme-toggle") as HTMLButtonElement;
 
   // 加载初始状态
   await loadState();
-  await loadSettings();
   await loadStats();
 
   // 监听事件
@@ -72,7 +62,6 @@ async function init() {
   // 绑定事件
   startBtn?.addEventListener("click", startTimer);
   pauseResumeBtn?.addEventListener("click", togglePauseResume);
-  saveSettingsBtn?.addEventListener("click", saveSettings);
   themeToggleBtn?.addEventListener("click", toggleTheme);
 
   // 加载保存的主题
@@ -91,20 +80,6 @@ async function loadState() {
     }
   } catch (error) {
     console.error("Failed to load state:", error);
-  }
-}
-
-// 加载设置
-async function loadSettings() {
-  try {
-    currentSettings = await invoke<Settings>("get_settings");
-    if (currentSettings && workMinutesInput && restSecondsInput && autoStartCheckbox) {
-      workMinutesInput.value = currentSettings.work_minutes.toString();
-      restSecondsInput.value = currentSettings.rest_seconds.toString();
-      autoStartCheckbox.checked = currentSettings.auto_start;
-    }
-  } catch (error) {
-    console.error("Failed to load settings:", error);
   }
 }
 
@@ -143,30 +118,6 @@ async function togglePauseResume() {
     await loadState();
   } catch (error) {
     console.error("Failed to toggle pause/resume:", error);
-  }
-}
-
-// 保存设置
-async function saveSettings() {
-  if (!workMinutesInput || !restSecondsInput || !autoStartCheckbox || !currentSettings) {
-    return;
-  }
-
-  const settings: Settings = {
-    work_minutes: parseInt(workMinutesInput.value),
-    rest_seconds: parseInt(restSecondsInput.value),
-    auto_start: autoStartCheckbox.checked,
-    theme: currentSettings.theme,
-  };
-
-  try {
-    await invoke("update_settings", { settings });
-    currentSettings = settings;
-    await loadState();
-    alert("设置已保存！");
-  } catch (error) {
-    console.error("Failed to save settings:", error);
-    alert("保存设置失败");
   }
 }
 
@@ -256,24 +207,16 @@ function toggleTheme() {
   if (themeIcon) {
     themeIcon.textContent = newTheme === "light" ? "🌙" : "☀️";
   }
-
-  // 保存到设置
-  if (currentSettings) {
-    currentSettings.theme = newTheme;
-    invoke("update_settings", { settings: currentSettings }).catch(console.error);
-  }
 }
 
 // 加载主题
 function loadTheme() {
-  if (currentSettings) {
-    const theme = currentSettings.theme || "light";
-    document.documentElement.setAttribute("data-theme", theme);
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
 
-    const themeIcon = themeToggleBtn?.querySelector(".theme-icon");
-    if (themeIcon) {
-      themeIcon.textContent = theme === "light" ? "🌙" : "☀️";
-    }
+  const themeIcon = themeToggleBtn?.querySelector(".theme-icon");
+  if (themeIcon) {
+    themeIcon.textContent = savedTheme === "light" ? "🌙" : "☀️";
   }
 }
 

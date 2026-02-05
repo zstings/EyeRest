@@ -20,17 +20,15 @@ pub fn run() {
             Some(vec![]),
         ))
         .setup(|app| {
-            // 加载设置和统计数据
-            let settings = storage::load_settings(app.handle());
+            // 加载统计数据
             let (today_completed, last_reset_date) = storage::load_stats(app.handle());
 
-            // 初始化应用状态
+            // 初始化应用状态，使用固定时长
             let app_state = AppState {
                 timer_state: state::TimerState::Stopped,
-                work_duration: (settings.work_minutes as u64) * 60,
-                rest_duration: settings.rest_seconds as u64,
-                remaining_seconds: (settings.work_minutes as u64) * 60,
-                settings,
+                work_duration: 20 * 60,  // 固定 20 分钟
+                rest_duration: 20,       // 固定 20 秒
+                remaining_seconds: 20 * 60,
                 today_completed,
                 last_reset_date,
             };
@@ -56,8 +54,6 @@ pub fn run() {
             commands::resume_timer,
             commands::skip_rest,
             commands::get_state,
-            commands::update_settings,
-            commands::get_settings,
             commands::get_stats,
         ])
         .run(tauri::generate_context!())
