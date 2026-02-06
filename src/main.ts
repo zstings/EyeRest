@@ -1,18 +1,28 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { StateInfo, Stats, TimerState } from "./types";
 
 // DOM 元素
 let timerDisplay: HTMLElement | null;
 let statusText: HTMLElement | null;
 let progressBar: HTMLElement | null;
 let todayCount: HTMLElement | null;
-let startBtn: HTMLButtonElement | null;
-let pauseResumeBtn: HTMLButtonElement | null;
 let themeToggleBtn: HTMLButtonElement | null;
 
+// 定时器配置（秒）
+const WORK_DURATION = 5; // 工作时长：5秒
+
 // 当前状态
-let currentState: StateInfo | null = null;
+let remainingSeconds = WORK_DURATION;
+let timerInterval: number | null = null;
+
+// LocalStorage 键
+const STATS_KEY = "eyerest_stats";
+
+// 统计数据接口
+interface Stats {
+  date: string;
+  count: number;
+}
 
 // 初始化
 async function init() {
@@ -21,103 +31,134 @@ async function init() {
   statusText = document.getElementById("status-text");
   progressBar = document.getElementById("progress-bar");
   todayCount = document.getElementById("today-count");
-  startBtn = document.getElementById("start-btn") as HTMLButtonElement;
-  pauseResumeBtn = document.getElementById("pause-resume-btn") as HTMLButtonElement;
   themeToggleBtn = document.getElementById("theme-toggle") as HTMLButtonElement;
 
-  // 加载初始状态
-  await loadState();
-  await loadStats();
+  // 加载统计数据
+  loadStats();
 
-  // 监听事件
-  await listen<number>("timer-tick", (event) => {
-    if (currentState) {
-      currentState.remaining_seconds = event.payload;
-      updateTimerDisplay(event.payload);
-      updateProgressBar(event.payload);
-    }
-  });
+  // 初始化显示
+  updateTimerDisplay(remainingSeconds);
+  updateProgressBar(remainingSeconds);
+  updateStatusText();
 
-  await listen("timer-work-complete", () => {
-    if (statusText) {
-      statusText.textContent = "休息时间！";
-    }
-  });
-
-  await listen("timer-rest-complete", () => {
-    if (statusText) {
-      statusText.textContent = "休息结束";
-    }
-    loadStats();
-  });
-
-  await listen<string>("timer-state-changed", (event) => {
-    if (currentState) {
-      currentState.timer_state = event.payload as TimerState;
-      updateButtonStates(event.payload as TimerState);
-      updateStatusText(event.payload as TimerState);
-    }
+  // 监听提示窗口关闭事件
+  await listen("reminder-closed", () => {
+    // 提示窗口关闭后，重新开始倒计时
+    startTimer();
   });
 
   // 绑定事件
-  startBtn?.addEventListener("click", startTimer);
-  pauseResumeBtn?.addEventListener("click", togglePauseResume);
   themeToggleBtn?.addEventListener("click", toggleTheme);
 
   // 加载保存的主题
   loadTheme();
+
+  // 自动开始倒计时
+  startTimer();
 }
 
-// 加载状态
-async function loadState() {
+// 加载统计数据（从 localStorage）
+function loadStats() {
   try {
-    currentState = await invoke<StateInfo>("get_state");
-    if (currentState) {
-      updateTimerDisplay(currentState.remaining_seconds);
-      updateProgressBar(currentState.remaining_seconds);
-      updateButtonStates(currentState.timer_state);
-      updateStatusText(currentState.timer_state);
-    }
-  } catch (error) {
-    console.error("Failed to load state:", error);
-  }
-}
+    const stats = getStats();
 
-// 加载统计
-async function loadStats() {
-  try {
-    const stats = await invoke<Stats>("get_stats");
-    if (stats && todayCount) {
-      todayCount.textContent = stats.today_completed.toString();
+    if (todayCount) {
+      todayCount.textContent = stats.count.toString();
     }
   } catch (error) {
     console.error("Failed to load stats:", error);
   }
 }
 
+// 获取今天的日期字符串 (YYYY-MM-DD)
+function getTodayDate(): string {
+  const now = new Date();
+  return now.toISOString().split("T")[0];
+}
+
+// 获取统计数据
+function getStats(): Stats {
+  const today = getTodayDate();
+  const statsJson = localStorage.getItem(STATS_KEY);
+
+  if (statsJson) {
+    const stats: Stats = JSON.parse(statsJson);
+    // 如果是新的一天，重置计数
+    if (stats.date !== today) {
+      return { date: today, count: 0 };
+    }
+    return stats;
+  }
+
+  return { date: today, count: 0 };
+}
+
+// 保存统计数据
+function saveStats(stats: Stats) {
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+}
+
+// 增加完成次数（由 reminder 窗口调用）
+export function incrementCount() {
+  const stats = getStats();
+  stats.count++;
+  saveStats(stats);
+  loadStats();
+}
+
 // 开始计时
-async function startTimer() {
-  try {
-    await invoke("start_timer");
-    await loadState();
-  } catch (error) {
-    console.error("Failed to start timer:", error);
+function startTimer() {
+  remainingSeconds = WORK_DURATION;
+  updateTimerDisplay(remainingSeconds);
+  updateProgressBar(remainingSeconds);
+  updateStatusText();
+  startTicking();
+}
+
+// 开始倒计时
+function startTicking() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+  }
+
+  timerInterval = window.setInterval(() => {
+    if (remainingSeconds > 0) {
+      remainingSeconds--;
+      updateTimerDisplay(remainingSeconds);
+      updateProgressBar(remainingSeconds);
+
+      // 倒计时结束
+      if (remainingSeconds === 0) {
+        onWorkComplete();
+      }
+    }
+  }, 1000);
+}
+
+// 停止倒计时
+function stopTicking() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
   }
 }
 
-// 切换暂停/恢复
-async function togglePauseResume() {
-  if (!currentState) return;
+// 工作完成
+async function onWorkComplete() {
+  stopTicking();
 
+  // 重置倒计时（准备下一轮）
+  remainingSeconds = WORK_DURATION;
+  updateTimerDisplay(remainingSeconds);
+  updateProgressBar(remainingSeconds);
+
+  // 打开提示窗口
   try {
-    if (currentState.timer_state === "Running") {
-      await invoke("pause_timer");
-    } else if (currentState.timer_state === "Paused") {
-      await invoke("resume_timer");
-    }
-    await loadState();
+    await invoke("show_rest_window");
   } catch (error) {
-    console.error("Failed to toggle pause/resume:", error);
+    console.error("Failed to show rest window:", error);
+    // 如果打开窗口失败，继续下一轮倒计时
+    startTimer();
   }
 }
 
@@ -132,65 +173,16 @@ function updateTimerDisplay(seconds: number) {
 
 // 更新进度条
 function updateProgressBar(seconds: number) {
-  if (!progressBar || !currentState) return;
+  if (!progressBar) return;
 
-  let total: number;
-  if (currentState.timer_state === "Resting") {
-    total = currentState.rest_duration;
-  } else {
-    total = currentState.work_duration;
-  }
-
-  const percentage = (seconds / total) * 100;
+  const percentage = (seconds / WORK_DURATION) * 100;
   progressBar.style.width = `${percentage}%`;
 }
 
-// 更新按钮状态
-function updateButtonStates(state: TimerState) {
-  if (!startBtn || !pauseResumeBtn) return;
-
-  switch (state) {
-    case "Stopped":
-      startBtn.disabled = false;
-      pauseResumeBtn.disabled = true;
-      pauseResumeBtn.textContent = "暂停";
-      break;
-    case "Running":
-      startBtn.disabled = true;
-      pauseResumeBtn.disabled = false;
-      pauseResumeBtn.textContent = "暂停";
-      break;
-    case "Paused":
-      startBtn.disabled = true;
-      pauseResumeBtn.disabled = false;
-      pauseResumeBtn.textContent = "继续";
-      break;
-    case "Resting":
-      startBtn.disabled = true;
-      pauseResumeBtn.disabled = true;
-      pauseResumeBtn.textContent = "暂停";
-      break;
-  }
-}
-
 // 更新状态文本
-function updateStatusText(state: TimerState) {
+function updateStatusText() {
   if (!statusText) return;
-
-  switch (state) {
-    case "Stopped":
-      statusText.textContent = "准备开始";
-      break;
-    case "Running":
-      statusText.textContent = "正在工作";
-      break;
-    case "Paused":
-      statusText.textContent = "已暂停";
-      break;
-    case "Resting":
-      statusText.textContent = "休息时间";
-      break;
-  }
+  statusText.textContent = "正在工作";
 }
 
 // 切换主题
