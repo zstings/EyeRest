@@ -25,10 +25,10 @@ pub fn show_reminder_window(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 关闭提醒窗口（彻底关闭，不是隐藏）
+/// 隐藏提醒窗口（不是彻底关闭）
 pub fn close_reminder_window(app: &AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("reminder") {
-        window.close().map_err(|e| format!("Failed to close reminder window: {}", e))?;
+        window.hide().map_err(|e| format!("Failed to hide reminder window: {}", e))?;
     }
 
     // 发送事件通知主窗口，提示窗口已关闭，可以重新开始倒计时

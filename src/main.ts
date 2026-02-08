@@ -43,7 +43,10 @@ async function init() {
 
   // 监听提示窗口关闭事件
   await listen("reminder-closed", () => {
-    // 提示窗口关闭后，重新开始倒计时
+    // 提示窗口关闭后，更新状态文本并重新开始倒计时
+    if (statusText) {
+      statusText.textContent = "正在工作";
+    }
     startTimer();
   });
 
@@ -147,10 +150,10 @@ function stopTicking() {
 async function onWorkComplete() {
   stopTicking();
 
-  // 重置倒计时（准备下一轮）
-  remainingSeconds = WORK_DURATION;
-  updateTimerDisplay(remainingSeconds);
-  updateProgressBar(remainingSeconds);
+  // 更新状态文本为"正在休息"
+  if (statusText) {
+    statusText.textContent = "正在休息";
+  }
 
   // 打开提示窗口
   try {
